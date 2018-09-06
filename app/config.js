@@ -13,6 +13,11 @@ environments.production = {
   'stripe' : {
     'key' : '',
     'currency' : 'eur'
+  },
+  'mailgun': {
+    'key': '',
+    'path': '',
+    'sender': ''
   }
 }
 

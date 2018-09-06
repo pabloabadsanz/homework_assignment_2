@@ -755,7 +755,13 @@ handlers._checkout.post = function(data, callback) {
             if (cartobject) {
               helpers.paymentWithStripe(2000, function(err) {
                 if (!err) {
-                  callback(200);
+                  helpers.sendMailWithOrder(userData, "TEXTO A ENVIAR", function(err) {
+                    if (!err) {
+                      callback(200);
+                    } else {
+                      callback(500, err);
+                    }
+                  });
                 } else {
                   callback(500, err);
                 }

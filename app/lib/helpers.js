@@ -92,5 +92,50 @@ helpers.paymentWithStripe = function(amount, callback) {
 
 };
 
+helpers.sendMailWithOrder = function(userData, order, callback) {
+
+  // Build the request object
+  var requestdetails = {
+      protocol: 'https:',
+      hostname: 'api.mailgun.net',
+      method: 'POST',
+      path: config.mailgun.path,
+      auth: config.mailgun.key
+  };
+
+  // Build the payload object
+  var payload = {
+      from: config.mailgun.sender,
+      to: userData.mail,
+      subject: 'Your Pizza Order!',
+      text: order
+  };
+
+  var stringpayload = querystring.stringify(payload);
+
+  requestdetails.headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(stringpayload)
+  };
+
+  // Instantiate the request.
+  var req = https.request(requestdetails, res => {
+      var status = res.statusCode;
+      console.log(status);
+      if(status === 200 || status === 201) {
+        console.log("Mail sent out");
+        callback(false);
+      } else {
+        callback(status);
+      }
+  });
+
+  req.on('error', (err) => {
+    callback(err);
+  });
+  req.write(stringpayload);
+  req.end();
+};
+
 // Export the module
 module.exports = helpers;
