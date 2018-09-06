@@ -502,6 +502,45 @@ handlers._logout.post = function(data, callback) {
   }
 };
 
+// Menu items
+handlers.menu = function(data, callback) {
+  var acceptablemethods = ['get'];
+  if (acceptablemethods.indexOf(data.method) > -1) {
+    handlers._menu[data.method](data, callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for all the logout methods
+handlers._menu = {};
+
+// Tokens - GET
+// Required data: token
+// Optional data: none
+handlers._menu.get = function(data, callback) {
+  // Check that the token is valid
+  var token = typeof(data.queryStringObject.token) == 'string' && data.queryStringObject.token.trim().length == 20 ? data.queryStringObject.token.trim() : false;
+  if (token) {
+    // Lookup the token
+    _data.read('tokens', token, function(err, tokenData) {
+      if (!err && tokenData) {
+        menuItemsData = {
+          '1': 'Tomato',
+          '2': 'Tuna',
+          '3': 'Ham',
+          '4': 'Pepperoni'
+        };
+        callback(200, menuItemsData);
+      } else {
+        callback(400, {'Error': 'Could not retrieve token, or invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required field'});
+  }
+}
+
 // The not found handler
 handlers.notFound = function(data,callback){
   callback(404);

@@ -89,7 +89,8 @@ server.router = {
   'users': handlers.users,
   'tokens': handlers.tokens,
   'login': handlers.login,
-  'logout': handlers.logout
+  'logout': handlers.logout,
+  'menu': handlers.menu
 }
 
 // Init script

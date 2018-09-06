@@ -72,8 +72,7 @@ tokenWorker.validateTokenExpirationDate = function(originalTokenData, callback) 
 tokenWorker.loop = function() {
   setInterval(function() {
     tokenWorker.gatherAllTokens();
-  // }, 1000 * 60 * 60 * 24);
-}, 1000 * 5);
+  }, 1000 * 5);
 }
 
 // Init script
