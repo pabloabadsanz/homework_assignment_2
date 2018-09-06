@@ -6,6 +6,7 @@
 // Dependencies
 var crypto = require('crypto');
 var config = require('../config');
+var https = require('https');
 var querystring = require('querystring');
 
  // Container for all the Helpers
@@ -52,6 +53,44 @@ helpers.createRandomString = function(strLength) {
     return false;
   }
 }
+
+// Payment with stripe.com
+helpers.paymentWithStripe = function(amount, callback) {
+
+  // Build the request details object
+  var req_details = {
+      'protocol': 'https:',
+      'method': 'POST',
+      'hostname': 'api.stripe.com',
+      'path': '/v1/charges',
+      'auth': config.stripe.key
+  };
+
+  // Build the payload object
+  var payload = {
+      'amount': amount,
+      'source': 'tok_visa',
+      'description': 'Pablo\'s Pizza Restaurant Order',
+      'currency': config.stripe.currency
+  };
+
+  var stringpayload = querystring.stringify(payload);
+
+  // Instantiate the request
+  var req = https.request(req_details, function(res) {
+      var statuscode = res.statusCode;
+      if(statuscode === 200 || statuscode === 201) {
+          callback(false);
+      } else {
+          callback(statuscode);
+      }
+  });
+
+  req.on('error', callback);
+  req.write(stringpayload);
+  req.end();
+
+};
 
 // Export the module
 module.exports = helpers;

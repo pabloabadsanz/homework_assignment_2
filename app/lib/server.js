@@ -92,7 +92,8 @@ server.router = {
   'logout': handlers.logout,
   'menu': handlers.menu,
   'cart': handlers.cart,
-  'cart/item': handlers.cartitems
+  'cart/item': handlers.cartitems,
+  'cart/checkout': handlers.checkout
 }
 
 // Init script

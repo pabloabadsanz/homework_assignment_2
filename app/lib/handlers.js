@@ -723,6 +723,59 @@ handlers._cartitems.post = function(data, callback) {
   }
 };
 
+// Checkout cart
+handlers.checkout = function(data, callback) {
+  var acceptablemethods = ['post'];
+  if (acceptablemethods.indexOf(data.method) > -1) {
+    handlers._checkout[data.method](data, callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for all the checkout methods
+handlers._checkout = {};
+
+// Checkout - POST
+// Required data: username, token
+// Optional data: none
+handlers._checkout.post = function(data, callback) {
+  // Check that the token is valid
+  var token = typeof(data.payload.token) == 'string' && data.payload.token.trim().length == 20 ? data.payload.token.trim() : false;
+  var username = typeof(data.payload.username) == 'string' && data.payload.username.trim().length > 0 ? data.payload.username.trim() : false;
+
+  if (token && username) {
+    // Lookup the token
+    _data.read('tokens', token, function(err, tokenData) {
+      if (!err && tokenData) {
+        // Lookup the user
+        _data.read('users', username, function(err, userData) {
+          if (!err && userData) {
+            var cartobject = typeof(userData.cart) == 'object' && userData.cart instanceof Array && userData.cart.length > 0 ? userData.cart : false;
+            if (cartobject) {
+              helpers.paymentWithStripe(2000, function(err) {
+                if (!err) {
+                  callback(200);
+                } else {
+                  callback(500, err);
+                }
+              })
+            } else {
+              callback(500, {'Error': 'You\'re trying to checkout an empty cart'});
+            }
+          } else {
+            callback(404);
+          }
+        });
+      } else {
+        callback(400, {'Error': 'Could not retrieve token, or invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required fields, or invalid'});
+  }
+};
+
 // The not found handler
 handlers.notFound = function(data,callback){
   callback(404);

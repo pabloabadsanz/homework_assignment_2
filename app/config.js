@@ -10,6 +10,10 @@ environments.production = {
   'httpPort' : 1234,
   'envName' : 'production',
   'hashingsecret': 'thisIsASecret',
+  'stripe' : {
+    'key' : '',
+    'currency' : 'eur'
+  }
 }
 
 // Export the module
