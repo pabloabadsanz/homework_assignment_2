@@ -174,7 +174,7 @@ handlers._users.put = function(data, callback) {
 // Required data: username
 handlers._users.delete = function(data, callback) {
   // Check that the username is valid
-  var username = typeof(data.queryStringObject.username) == 'string' && data.queryStringObject.username.trim().length > 10 ? data.queryStringObject.username.trim() : false;
+  var username = typeof(data.queryStringObject.username) == 'string' && data.queryStringObject.username.trim().length > 0 ? data.queryStringObject.username.trim() : false;
   if (username) {
     // Get the token from the headers
     var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
