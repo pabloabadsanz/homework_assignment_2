@@ -58,7 +58,6 @@ handlers._users.post = function(data, callback) {
             if (!err) {
               callback(200);
             } else {
-              console.log(err);
               callback(500, {'Error': 'Could not create the new user'});
             }
           });
@@ -150,7 +149,6 @@ handlers._users.put = function(data, callback) {
                 if (!err) {
                   callback(200);
                 } else {
-                  console.log(err);
                   callback(500, {'Error': 'Could not update user'});
                 }
               });
@@ -194,7 +192,7 @@ handlers._users.delete = function(data, callback) {
                   var deletionErrors = false;
                   // Loop through the tokens
                   usertokens.forEach(function(tokenId) {
-                    
+
                     // Delete the token
                     _data.delete('tokens', tokenId, function(err) {
                       if (err) {
