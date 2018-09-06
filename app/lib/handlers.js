@@ -186,7 +186,33 @@ handlers._users.delete = function(data, callback) {
           if (!err && data) {
             _data.delete('users', username, function(err) {
               if (!err) {
-                callback(200);
+                // Delete each of the tokens associated with the user
+                var usertokens = typeof(data.tokens) == 'object' && data.tokens instanceof Array ? data.tokens : [];
+                var tokenstodelete = usertokens.length;
+                if (tokenstodelete > 0) {
+                  var tokensdeleted = 0;
+                  var deletionErrors = false;
+                  // Loop through the tokens
+                  usertokens.forEach(function(tokenId) {
+                    
+                    // Delete the token
+                    _data.delete('tokens', tokenId, function(err) {
+                      if (err) {
+                        deletionErrors = true;
+                      }
+                      tokensdeleted++;
+                      if(tokensdeleted == tokenstodelete) {
+                        if (!deletionErrors) {
+                          callback(200);
+                        } else {
+                          callback(500, {'Error': 'Errors encountered while attempting to delete all of the user\'s tokens. All checks may not have deleted from the system successfully'});
+                        }
+                      }
+                    });
+                  });
+                } else {
+                  callback(200);
+                }
               } else {
                 callback(500, {'Error': 'Could not delete the specified user'});
               }
@@ -228,6 +254,8 @@ handlers._tokens.post = function(data, callback) {
     // Lookup the user who matches that username
     _data.read('users', username, function(err, userData) {
       if (!err && userData) {
+        var usertokens = typeof(userData.tokens) == 'object' && userData.tokens instanceof Array ? userData.tokens : [];
+
         // Hash the sent password, and compare it to the stored password
         var hashedpassword = helpers.hash(password);
         if (hashedpassword == userData.hashedPassword) {
@@ -244,11 +272,23 @@ handlers._tokens.post = function(data, callback) {
           // Store the token
           _data.write('tokens', tokenid, tokenobject, function(err) {
             if (!err) {
-              callback(200, tokenobject);
+              // Add the token id to the user's object
+              userData.tokens = usertokens;
+              userData.tokens.push(tokenid);
+
+              // Save the token into user data
+              _data.update('users', username, userData, function(err) {
+                if (!err) {
+                  // Return the data about the new token
+                  callback(200, tokenobject);
+                } else {
+                  callback(500, {'Error': 'Could not update the user with the new token'});
+                }
+              });
             } else {
               callback(500, {'Error': 'Could not create the new token'});
             }
-          })
+          });
         } else {
           callback(400, {'Error': 'Password did not match the specified user\'s stored password'});
         }
@@ -427,7 +467,22 @@ handlers._logout.post = function(data, callback) {
               if (!err && data) {
                 _data.delete('tokens', tokenid, function(err) {
                   if (!err) {
-                    callback(200);
+                    // Retrieve the tokens from the user object
+                    var usertokens = typeof(userData.tokens) == 'object' && userData.tokens instanceof Array ? userData.tokens : [];
+
+                    // Remove the token id from the user's object
+                    var checkposition = usertokens.indexOf(tokenid);
+                    userData.tokens.splice(checkposition, 1);
+
+                    // Save the token into user data
+                    _data.update('users', username, userData, function(err) {
+                      if (!err) {
+                        // Return the data about the new token
+                        callback(200);
+                      } else {
+                        callback(500, {'Error': 'Could not update the user with the new token'});
+                      }
+                    });
                   } else {
                     callback(500, {'Error': 'Could not delete the specified token'});
                   }
