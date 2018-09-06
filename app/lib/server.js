@@ -90,7 +90,9 @@ server.router = {
   'tokens': handlers.tokens,
   'login': handlers.login,
   'logout': handlers.logout,
-  'menu': handlers.menu
+  'menu': handlers.menu,
+  'cart': handlers.cart,
+  'cart/item': handlers.cartitems
 }
 
 // Init script

@@ -512,10 +512,10 @@ handlers.menu = function(data, callback) {
   }
 };
 
-// Container for all the logout methods
+// Container for all the menu methods
 handlers._menu = {};
 
-// Tokens - GET
+// Menu items - GET
 // Required data: token
 // Optional data: none
 handlers._menu.get = function(data, callback) {
@@ -525,12 +525,7 @@ handlers._menu.get = function(data, callback) {
     // Lookup the token
     _data.read('tokens', token, function(err, tokenData) {
       if (!err && tokenData) {
-        menuItemsData = {
-          '1': 'Tomato',
-          '2': 'Tuna',
-          '3': 'Ham',
-          '4': 'Pepperoni'
-        };
+        menuItemsData = ['Tomato', 'Tuna', 'Ham', 'Pepperoni'];
         callback(200, menuItemsData);
       } else {
         callback(400, {'Error': 'Could not retrieve token, or invalid'});
@@ -540,6 +535,193 @@ handlers._menu.get = function(data, callback) {
     callback(400, {'Error': 'Missing required field'});
   }
 }
+
+// Cart items
+handlers.cart = function(data, callback) {
+  var acceptablemethods = ['get', 'delete'];
+  if (acceptablemethods.indexOf(data.method) > -1) {
+    handlers._cart[data.method](data, callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for all the cart methods
+handlers._cart = {};
+
+// CART - GET
+// Required data: username, token
+// Optional data: none
+handlers._cart.get = function(data, callback) {
+  // Check that the token is valid
+  var token = typeof(data.queryStringObject.token) == 'string' && data.queryStringObject.token.trim().length == 20 ? data.queryStringObject.token.trim() : false;
+  var username = typeof(data.queryStringObject.username) == 'string' && data.queryStringObject.username.trim().length > 0 ? data.queryStringObject.username.trim() : false;
+  if (token && username) {
+    // Lookup the token
+    _data.read('tokens', token, function(err, tokenData) {
+      if (!err && tokenData) {
+        // Lookup the user
+        _data.read('users', username, function(err, userData) {
+          if (!err && userData) {
+            var cartobject = typeof(userData.cart) == 'object' && userData.cart instanceof Array && userData.cart.length > 0 ? userData.cart : [];
+            callback(200, cartobject);
+          } else {
+            callback(404);
+          }
+        });
+      } else {
+        callback(400, {'Error': 'Could not retrieve token, or invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required field'});
+  }
+}
+
+// CART - DELETE
+// Required data: username, token
+// Optional data: none
+handlers._cart.delete = function(data, callback) {
+  // Check that the token is valid
+  var token = typeof(data.queryStringObject.token) == 'string' && data.queryStringObject.token.trim().length == 20 ? data.queryStringObject.token.trim() : false;
+  var username = typeof(data.queryStringObject.username) == 'string' && data.queryStringObject.username.trim().length > 0 ? data.queryStringObject.username.trim() : false;
+  if (token && username) {
+    // Lookup the token
+    _data.read('tokens', token, function(err, tokenData) {
+      if (!err && tokenData) {
+        // Lookup the user
+        _data.read('users', username, function(err, userData) {
+          if (!err && userData) {
+            userData.cart = [];
+            // Store the new updates
+            _data.update('users', username, userData, function(err) {
+              if (!err) {
+                callback(200);
+              } else {
+                callback(500, {'Error': 'Could not update user'});
+              }
+            });
+          } else {
+            callback(404);
+          }
+        });
+      } else {
+        callback(400, {'Error': 'Could not retrieve token, or invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required field'});
+  }
+}
+
+// Cart items
+handlers.cartitems = function(data, callback) {
+  var acceptablemethods = ['post', 'delete'];
+  if (acceptablemethods.indexOf(data.method) > -1) {
+    handlers._cartitems[data.method](data, callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for all the cart items methods
+handlers._cartitems = {};
+
+// Cart items - DELETE
+// Required data: username, token, items
+// Optional data: none
+handlers._cartitems.delete = function(data, callback) {
+  // Check that the token is valid
+  var token = typeof(data.payload.token) == 'string' && data.payload.token.trim().length == 20 ? data.payload.token.trim() : false;
+  var username = typeof(data.payload.username) == 'string' && data.payload.username.trim().length > 0 ? data.payload.username.trim() : false;
+  var items = typeof(data.payload.items) == 'object' && data.payload.items instanceof Array && data.payload.items.length > 0 ? data.payload.items : false;
+
+  if (token && username && items) {
+    // Lookup the token
+    _data.read('tokens', token, function(err, tokenData) {
+      if (!err && tokenData) {
+        // Lookup the user
+        _data.read('users', username, function(err, userData) {
+          if (!err && userData) {
+            var cartobject = typeof(userData.cart) == 'object' && userData.cart instanceof Array && userData.cart.length > 0 ? userData.cart : [];
+
+            // Loop through the items to remove, and remove them if they're in the list
+            items.forEach(function(item) {
+              var itemposition = cartobject.indexOf(item.trim());
+              if (item.trim().length > 0 &&  itemposition > -1) {
+                cartobject.splice(itemposition, 1);
+              }
+            });
+
+            userData.cart = cartobject;
+            // Store the new updates
+            _data.update('users', username, userData, function(err) {
+              if (!err) {
+                callback(200);
+              } else {
+                callback(500, {'Error': 'Could not update user'});
+              }
+            });
+          } else {
+            callback(404);
+          }
+        });
+      } else {
+        callback(400, {'Error': 'Could not retrieve token, or invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required fields, or invalid'});
+  }
+};
+
+// Cart items - POST
+// Required data: username, token, items
+// Optional data: none
+handlers._cartitems.post = function(data, callback) {
+  // Check that the token is valid
+  var token = typeof(data.payload.token) == 'string' && data.payload.token.trim().length == 20 ? data.payload.token.trim() : false;
+  var username = typeof(data.payload.username) == 'string' && data.payload.username.trim().length > 0 ? data.payload.username.trim() : false;
+  var items = typeof(data.payload.items) == 'object' && data.payload.items instanceof Array && data.payload.items.length > 0 ? data.payload.items : false;
+
+  if (token && username && items) {
+    // Lookup the token
+    _data.read('tokens', token, function(err, tokenData) {
+      if (!err && tokenData) {
+        // Lookup the user
+        _data.read('users', username, function(err, userData) {
+          if (!err && userData) {
+            var cartobject = typeof(userData.cart) == 'object' && userData.cart instanceof Array && userData.cart.length > 0 ? userData.cart : [];
+
+            // Loop through the items to add, and add them if they're not in the list
+            items.forEach(function(item) {
+              var itemposition = cartobject.indexOf(item.trim());
+              if (item.trim().length > 0 &&  itemposition < 0) {
+                cartobject.push(item.trim());
+              }
+            });
+
+            userData.cart = cartobject;
+            // Store the new updates
+            _data.update('users', username, userData, function(err) {
+              if (!err) {
+                callback(200);
+              } else {
+                callback(500, {'Error': 'Could not update user'});
+              }
+            });
+          } else {
+            callback(404);
+          }
+        });
+      } else {
+        callback(400, {'Error': 'Could not retrieve token, or invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required fields, or invalid'});
+  }
+};
 
 // The not found handler
 handlers.notFound = function(data,callback){
