@@ -80,9 +80,9 @@ helpers.paymentWithStripe = function(amount, callback) {
   var req = https.request(req_details, function(res) {
       var statuscode = res.statusCode;
       if(statuscode === 200 || statuscode === 201) {
-          callback(false);
+        callback(false);
       } else {
-          callback(statuscode);
+        callback(statuscode);
       }
   });
 
@@ -119,9 +119,8 @@ helpers.sendMailWithOrder = function(userData, order, callback) {
   };
 
   // Instantiate the request.
-  var req = https.request(requestdetails, res => {
+  var req = https.request(requestdetails, function(res) {
       var status = res.statusCode;
-      console.log(status);
       if(status === 200 || status === 201) {
         console.log("Mail sent out");
         callback(false);

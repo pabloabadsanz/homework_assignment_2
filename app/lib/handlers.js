@@ -448,7 +448,7 @@ handlers._logout.post = function(data, callback) {
   // Check for the required fields
   var username = typeof(data.payload.username) == 'string' && data.payload.username.trim().length > 0 ? data.payload.username.trim() : false;
   var password = typeof(data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
-  var tokenid = typeof(data.payload.id) == 'string' && data.payload.id.trim().length == 20 ? data.payload.id.trim() : false;
+  var tokenid = typeof(data.payload.token) == 'string' && data.payload.token.trim().length == 20 ? data.payload.token.trim() : false;
 
   // If reqired fields are valid
   if (username && password && tokenid) {
@@ -525,8 +525,7 @@ handlers._menu.get = function(data, callback) {
     // Lookup the token
     _data.read('tokens', token, function(err, tokenData) {
       if (!err && tokenData) {
-        menuItemsData = ['Tomato', 'Tuna', 'Ham', 'Pepperoni'];
-        callback(200, menuItemsData);
+        callback(200, config.menuItemsData);
       } else {
         callback(400, {'Error': 'Could not retrieve token, or invalid'});
       }
@@ -753,11 +752,43 @@ handlers._checkout.post = function(data, callback) {
           if (!err && userData) {
             var cartobject = typeof(userData.cart) == 'object' && userData.cart instanceof Array && userData.cart.length > 0 ? userData.cart : false;
             if (cartobject) {
-              helpers.paymentWithStripe(2000, function(err) {
+              var orderAmount = 0;
+              var mailMessage = 'Pablo\'s Pizza\n\nYou\'ve placed your order with the following details:\n\nIngredients and price\n\n';
+              // Iterate through cart items for calculating the order's price
+              cartobject.forEach(function(item) {
+                // Check if the item being checked out is in the menu list, and add it's price
+                orderAmount += config.menuItemsData[item];
+                // Start adding menu items to the mail message
+                mailMessage += item + '\t\t' + config.menuItemsData[item] + '€\n';
+              });
+              mailMessage += '--------------------------\n\nTOTAL: ' + orderAmount + '€\n\nThanks for your order. You\'ll receive it within the next 30 minutes or we will refund you.';
+
+              // Proceed with the payment, multiplying the order amount hundred times
+              helpers.paymentWithStripe(orderAmount * 100, function(err) {
                 if (!err) {
-                  helpers.sendMailWithOrder(userData, "TEXTO A ENVIAR", function(err) {
+                  // If the payment was successful, send a mail message to the user
+                  helpers.sendMailWithOrder(userData, mailMessage, function(err) {
                     if (!err) {
-                      callback(200);
+                      // Empty the user's cart
+
+                      // Lookup the user
+                      _data.read('users', username, function(err, userData) {
+                        if (!err && userData) {
+                          // Empty the cart
+                          userData.cart = [];
+
+                          // Store the new updates
+                          _data.update('users', username, userData, function(err) {
+                            if (!err) {
+                              callback(200);
+                            } else {
+                              callback(500, {'Error': 'Could not empty the user\'s cart'});
+                            }
+                          });
+                        } else {
+                          callback(404);
+                        }
+                      });
                     } else {
                       callback(500, err);
                     }
@@ -765,12 +796,12 @@ handlers._checkout.post = function(data, callback) {
                 } else {
                   callback(500, err);
                 }
-              })
+              });
             } else {
               callback(500, {'Error': 'You\'re trying to checkout an empty cart'});
             }
           } else {
-            callback(404);
+            callback(400, {'Error': 'Could not retrieve the menu items'});
           }
         });
       } else {
